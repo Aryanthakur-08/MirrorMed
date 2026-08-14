@@ -1,0 +1,13 @@
+{
+  "name": "mirrormed",
+  "version": "1.0.0",
+  "description": "MirrorMed Enterprise Platform",
+  "scripts": {
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:backend": "cd backend && venv\\Scripts\\python.exe main.py",
+    "start:frontend": "cd frontend && npm run dev"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
