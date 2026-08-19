@@ -93,4 +93,4 @@ Contributions, issues, and feature requests are welcome!
 
 ## 📄 License
 
-This project is licensed under the MIT License.
+All Rights Reserved. This project is proprietary and confidential.
