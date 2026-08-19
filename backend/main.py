@@ -1,5 +1,9 @@
-from pydantic import BaseModel, Field
+import numpy as np
+from scipy import stats
+import uuid
+import random
 from typing import List, Optional, Dict, Any
+from pydantic import BaseModel, Field
 
 class PatientRecord(BaseModel):
     id: str
@@ -447,13 +451,6 @@ Respond ONLY with valid JSON in this exact structure:
         return None
 
 
-import numpy as np
-from scipy import stats
-import uuid
-import random
-from typing import List
-import difflib
-
 
 BASELINES: Dict[str, Dict[str, Any]] = {
     "General": {
@@ -503,6 +500,10 @@ BASELINES: Dict[str, Dict[str, Any]] = {
     "Pediatrics": {
         "age": (3, 2), "systolic_bp": (95, 10), "diastolic_bp": (60, 8),
         "bmi": (16, 2), "blood_glucose": (85, 10), "cholesterol": (160, 20)
+    },
+    "Gynecology": {
+        "age": (40, 12), "systolic_bp": (115, 12), "diastolic_bp": (75, 8),
+        "bmi": (25, 5), "blood_glucose": (90, 10), "cholesterol": (180, 25)
     }
 }
 
@@ -517,7 +518,8 @@ ICD10_CODES = {
     "Orthopedics": ["M54.5", "M19.90", "M81.0", "S82.009A", "M15.9"],
     "Gastroenterology": ["K21.9", "K58.9", "K29.70", "K76.0", "K92.2"],
     "Covid": ["U07.1", "J12.82", "J80", "R05", "R50.9"],
-    "Pediatrics": ["P07.39", "P22.0", "J06.9", "Z00.129", "P59.9"]
+    "Pediatrics": ["P07.39", "P22.0", "J06.9", "Z00.129", "P59.9"],
+    "Gynecology": ["Z01.419", "N92.6", "N83.20", "N94.6", "N73.9"]
 }
 
 # Map common disease names, abbreviations, and related terms to existing baseline keys
@@ -569,6 +571,11 @@ DISEASE_ALIASES: Dict[str, str] = {
     "neonatal": "Pediatrics", "neonatology": "Pediatrics",
     "baby": "Pediatrics", "infant": "Pediatrics", "newborn": "Pediatrics",
     "child": "Pediatrics", "children": "Pediatrics", "toddler": "Pediatrics",
+    # Gynecology
+    "gynecology": "Gynecology", "gynaecology": "Gynecology",
+    "gyno": "Gynecology", "obgyn": "Gynecology", "ob-gyn": "Gynecology",
+    "obstetrics": "Gynecology", "women's health": "Gynecology",
+    "pregnancy": "Gynecology", "maternity": "Gynecology",
 }
 
 def resolve_disease_alias(focus: str) -> str:
@@ -624,7 +631,15 @@ def generate_cohort_data(cohort_size: int, disease_focus: str) -> List[PatientRe
     min_age = max(0, int(mean_age - 2.5 * std_age))
     
     ages = np.random.normal(mean_age, std_age, cohort_size).clip(min_age, 100)
-    sexes = np.random.choice(["M", "F"], cohort_size)
+    
+    # Assign sex based on specialty
+    focus_lower = original_focus.lower() + " " + disease_focus.lower()
+    if any(w in focus_lower for w in ["gyn", "obstetric", "maternity", "pregnancy", "women"]):
+        sexes = np.array(["F"] * cohort_size)
+    elif any(w in focus_lower for w in ["andrology", "prostate", "testicular", "men"]):
+        sexes = np.array(["M"] * cohort_size)
+    else:
+        sexes = np.random.choice(["M", "F"], cohort_size)
     
     is_pediatric = disease_focus == "Pediatrics"
     bmi_min = 12 if is_pediatric else 15
